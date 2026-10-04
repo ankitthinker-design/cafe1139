@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Friction Ramp Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF3FA; --panel:#FFFFFF; --ink:#16325C; --muted:#56708F; --line:#C8DAEA;
+  --sky1:#D3E9F9; --sky2:#F5FAFE; --ground:#A9CF96; --wedge:#DCE5EE; --wedge-edge:#A9BCD0;
+  --accent:#2B6CD4; --accent-ink:#FFFFFF; --good:#2E8B57; --warn:#C8430C; --heat:#E4572E;
+  --pull:#2B6CD4; --fric:#E4572E; --chip:#F1F6FB; --tyre:#23272F;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1A2B; --panel:#15253B; --ink:#E4EEF9; --muted:#9DB2CB; --line:#27405F;
+    --sky1:#13263F; --sky2:#1B3352; --ground:#2F5A36; --wedge:#22364F; --wedge-edge:#3A5575;
+    --accent:#6A9EF2; --accent-ink:#0E1A2B; --good:#4FC285; --warn:#FF8A50; --heat:#FF7A3D;
+    --pull:#7FB0FF; --fric:#FF8A50; --chip:#1C2F49; --tyre:#0A0D12;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1A2B; --panel:#15253B; --ink:#E4EEF9; --muted:#9DB2CB; --line:#27405F;
+  --sky1:#13263F; --sky2:#1B3352; --ground:#2F5A36; --wedge:#22364F; --wedge-edge:#3A5575;
+  --accent:#6A9EF2; --accent-ink:#0E1A2B; --good:#4FC285; --warn:#FF8A50; --heat:#FF7A3D;
+  --pull:#7FB0FF; --fric:#FF8A50; --chip:#1C2F49; --tyre:#0A0D12;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:'Baloo 2','Noto Sans Devanagari','Nirmala UI','Mangal',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:17px;line-height:1.45}
+.wrap{max-width:1120px;margin:0 auto;padding:16px 14px 40px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px}
+h1{margin:0;font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;line-height:1.05}
+.sub{margin:2px 0 0;color:var(--muted);font-size:1.05rem}
+.toggles{display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--panel);border:1.5px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--ink);font:inherit;font-weight:600;padding:3px 13px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.stage{background:linear-gradient(var(--sky1),var(--sky2));border:1.5px solid var(--line);border-radius:18px;overflow:hidden}
+#scene{display:block;width:100%}
+.msg{display:flex;align-items:flex-start;gap:10px;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;margin-top:10px;font-weight:600;font-size:1.08rem;min-height:48px}
+.msg.good{border-color:var(--good)} .msg.warn{border-color:var(--warn)}
+.msg p{margin:0;flex:1} .msg .talk{display:block;font-weight:500;color:var(--muted);font-size:.98rem}
+.speak{flex:none;border:1.5px solid var(--line);background:var(--chip);color:var(--ink);border-radius:10px;font:inherit;font-size:1rem;padding:2px 9px;cursor:pointer}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}
+.ro{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:8px 12px}
+.ro .k{color:var(--muted);font-size:.9rem;line-height:1.2}
+.ro .v{font-size:1.45rem;font-weight:700;line-height:1.15}
+.ro.primary{border-color:var(--accent);border-width:2px}
+.ro.primary .v{font-size:2.2rem;font-weight:800}
+.ro small{font-size:.85rem;font-weight:500;color:var(--muted)}
+.heatbar{height:12px;border-radius:6px;background:var(--chip);border:1px solid var(--line);overflow:hidden;margin-top:6px}
+.heatbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#F5B700,var(--heat))}
+.steps{display:grid;grid-template-columns:1.2fr 1fr .9fr;gap:12px}
+.panel{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
+.panel h2{margin:0 0 8px;font-size:1.2rem;font-weight:800}
+.panel h3{margin:8px 0 5px;font-size:1rem;color:var(--muted);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--chip);color:var(--ink);
+  font:inherit;font-weight:600;font-size:.97rem;padding:4px 11px;border-radius:12px;cursor:pointer;text-align:left}
+.chip .em{font-size:1.2rem;line-height:1}
+.chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.chip:disabled,.btn:disabled,input:disabled,.mini:disabled{opacity:.45;cursor:not-allowed}
+.big2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.big2 .chip{justify-content:center;padding:8px;font-size:1.02rem}
+.big2 .chip .em{font-size:1.6rem}
+.grip{display:flex;align-items:center;gap:10px;margin-top:10px}
+.gripbar{display:flex;gap:4px;flex:1}
+.gripbar i{flex:1;height:14px;border-radius:4px;background:var(--chip);border:1px solid var(--line)}
+.gripbar i.on{background:var(--fric);border-color:var(--fric)}
+.griplabel{font-weight:700;min-width:8ch}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mini{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--line);background:var(--chip);color:var(--ink);font:inherit;font-size:1.25rem;font-weight:700;cursor:pointer}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);height:28px}
+input[type=text]{width:100%;font:inherit;font-size:.97rem;padding:6px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--chip);color:var(--ink);margin-top:8px}
+.note{color:var(--muted);font-size:.9rem;margin:6px 0 0}
+.q{display:flex;gap:8px;align-items:flex-start}
+.q p{margin:0;flex:1;font-weight:600}
+.reasons{margin-top:4px}
+.btn{font:inherit;font-weight:700;font-size:1.1rem;border-radius:14px;padding:10px 16px;cursor:pointer;border:1.5px solid var(--line);background:var(--chip);color:var(--ink)}
+.btn.go{width:100%;background:var(--good);border-color:var(--good);color:#fff;font-size:1.3rem;padding:14px}
+.btnrow{display:flex;gap:8px;margin-top:8px}
+.btnrow .btn{flex:1}
+label.check{display:flex;gap:8px;align-items:center;font-size:.95rem;margin-top:8px;cursor:pointer}
+.explore-only{display:none}
+body.explore .explore-only{display:block}
+body.explore .row.explore-only,body.explore label.explore-only{display:flex}
+body.explore .simple-only{display:none}
+.lock{font-weight:600}
+.results{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.results canvas{width:100%;display:block}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--muted);font-weight:600}
+td .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.empty{color:var(--muted);padding:6px 0;margin:0}
+.linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:0}
+.wordgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.word{background:var(--chip);border-radius:12px;padding:7px 11px;border:1px solid var(--line);text-align:left;font:inherit;color:var(--ink);cursor:pointer}
+.word b{display:block;font-size:1.1rem}
+.word span{display:block;color:var(--muted);font-size:.95rem}
+.word .dv{color:var(--ink);font-weight:600}
+#teacher{display:none}
+.guide{background:var(--panel);border:1.5px solid var(--line);border-radius:18px;padding:18px 22px;max-width:880px}
+.guide h2{font-size:1.4rem;margin:22px 0 6px;line-height:1.2}
+.guide h2:first-child{margin-top:0}
+.guide p,.guide li{max-width:72ch}
+.guide ul,.guide ol{padding-left:1.3rem;margin:6px 0}
+.guide li{margin:5px 0}
+.why{border-left:4px solid var(--accent);background:var(--chip);padding:6px 12px;border-radius:0 10px 10px 0;margin:8px 0}
+.say{border-left:4px solid var(--good);background:var(--chip);padding:6px 12px;border-radius:0 10px 10px 0;margin:8px 0}
+.flag{border-left:4px solid var(--warn);background:var(--chip);padding:6px 12px;border-radius:0 10px 10px 0;margin:8px 0}
+.dur{color:var(--muted);font-weight:500}
+.rubric th,.rubric td{white-space:normal;vertical-align:top;font-size:.93rem;min-width:130px}
+@media (max-width:900px){ .steps,.results{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 data-t="title">Friction Ramp Lab</h1>
+      <p class="sub" data-t="sub"></p>
+    </div>
+    <div class="toggles">
+      <div class="seg" role="group" aria-label="Language">
+        <button id="lang-en" aria-pressed="true">English</button>
+        <button id="lang-hi" aria-pressed="false">हिंदी</button>
+      </div>
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="mode-simple" aria-pressed="true" data-t="simple"></button>
+        <button id="mode-explore" aria-pressed="false" data-t="explore"></button>
+      </div>
+      <div class="seg" role="group" aria-label="View">
+        <button id="tab-lab" aria-pressed="true" data-t="tabLab"></button>
+        <button id="tab-teacher" aria-pressed="false" data-t="tabTeacher"></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="lab">
+    <div class="stage"><canvas id="scene" aria-label="Ramp experiment"></canvas></div>
+    <div class="msg" id="msg"><p id="msgText"></p><button class="speak" id="msgSpeak" aria-label="Listen">🔊</button></div>
+
+    <div class="readouts">
+      <div class="ro primary"><div class="k" id="kPrimary"></div><div class="v"><span id="vPrimary">–</span> <small id="uPrimary"></small></div></div>
+      <div class="ro"><div class="k" data-t="rSpeed"></div><div class="v"><span id="vSpeed">0.00</span> <small>m/s</small></div></div>
+      <div class="ro explore-only"><div class="k" data-t="rTop"></div><div class="v"><span id="vTop">–</span> <small>m/s</small></div></div>
+      <div class="ro explore-only" id="roDist"><div class="k" data-t="rDist"></div><div class="v"><span id="vDist">–</span> <small>m</small></div></div>
+      <div class="ro explore-only"><div class="k" data-t="rHeat"></div><div class="v"><span id="vHeat">0%</span></div><div class="heatbar"><i id="heatFill"></i></div></div>
+    </div>
+
+    <div class="steps">
+      <section class="panel">
+        <h2 data-t="step1"></h2>
+        <h3 data-t="object"></h3>
+        <div class="big2" id="objChips"></div>
+        <h3 data-t="material"></h3>
+        <div class="chips" id="matChips"></div>
+        <h3 data-t="condition"></h3>
+        <div class="chips" id="condChips"></div>
+        <div class="grip"><span data-t="grip"></span><div class="gripbar" id="gripBar"><i></i><i></i><i></i><i></i><i></i></div><span class="griplabel" id="gripLabel"></span></div>
+        <div class="explore-only">
+          <h3><span data-t="customFric"></span>: <b id="muVal">0.28</b></h3>
+          <div class="row">
+            <button class="mini" id="muDown" aria-label="Less friction">−</button>
+            <input type="range" id="muSlider" min="0.02" max="0.70" step="0.01" value="0.28" aria-label="Friction">
+            <button class="mini" id="muUp" aria-label="More friction">+</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 data-t="step2"></h2>
+        <div class="q"><p id="qText"></p><button class="speak" id="qSpeak" aria-label="Listen">🔊</button></div>
+        <div class="chips" id="predOpts" style="margin-top:8px"></div>
+        <div id="reasonBox" style="display:none">
+          <h3 data-t="because"></h3>
+          <div class="chips reasons" id="reasonChips"></div>
+          <input type="text" id="ownWords" maxlength="140">
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 data-t="step3"></h2>
+        <button class="btn go" id="goBtn" data-t="go"></button>
+        <p class="note" id="needReason" style="display:none"></p>
+        <div class="btnrow"><button class="btn" id="resetBtn" data-t="reset"></button></div>
+        <label class="check"><input type="checkbox" id="slowmo"> <span data-t="slow"></span></label>
+        <label class="check"><input type="checkbox" id="showForces" checked> <span data-t="forces"></span></label>
+        <p class="note simple-only"><span data-t="angle"></span>: <span class="lock"><span class="angNow">30</span>° 🔒</span> <span data-t="locked"></span></p>
+        <div class="explore-only">
+          <h3><span data-t="angle"></span>: <span class="angNow">30</span>°</h3>
+          <input type="range" id="angSlider" min="15" max="40" step="1" value="30" aria-label="Ramp angle" style="width:100%">
+          <p class="note" data-t="fair"></p>
+        </div>
+        <label class="check explore-only"><input type="checkbox" id="wobble"> <span data-t="wobble"></span></label>
+      </section>
+    </div>
+
+    <div class="results">
+      <section class="panel">
+        <h2 data-t="bars"></h2>
+        <canvas id="bars" aria-label="Results bar chart"></canvas>
+      </section>
+      <section class="panel">
+        <div class="row" style="justify-content:space-between"><h2 data-t="table"></h2><button class="linkbtn" id="clearBtn" data-t="clear"></button></div>
+        <div class="tablewrap" id="tableWrap"></div>
+      </section>
+      <section class="panel explore-only" style="grid-column:1/-1">
+        <h2 data-t="graphTitle"></h2>
+        <canvas id="graph" aria-label="Speed against time graph"></canvas>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top:12px">
+      <h2 data-t="words"></h2>
+      <div class="wordgrid" id="wordGrid"></div>
+    </section>
+  </main>
+
+  <section id="teacher">
+    <article class="guide" id="guide-en" lang="en">
+      <h2>Before the lesson</h2>
+      <p>This lab supports Cambridge Primary Science Stage 6, Unit 4.6 (Friction) and 4.7 (Investigate friction). You need one screen (a projector or a single laptop is enough; with two devices, give one to each team), one wooden plank, a matchbox, liquid soap and a phone timer.</p>
+      <p>Start in <b>Simple</b> mode. It locks the ramp angle, hides extra numbers, and keeps the screen calm for basic readers. <b>Explore</b> mode adds a friction slider, an angle slider, a speed–time graph and energy data. Use it for stronger learners or a second lesson.</p>
+
+      <h2>Lesson flow (40 minutes)</h2>
+      <ol>
+        <li><b>Hook</b> <span class="dur">4 min</span>. Everyone rubs their hands fast for 30 seconds. Ask why they got warm. Write every answer on the board and do not correct yet.</li>
+        <li><b>Real experiment first</b> <span class="dur">12 min</span>. Do Learner's Book activity 4.7: time the matchbox down a dry plank, then a soapy plank, three times each.
+          <div class="why"><b>Why first:</b> children should feel friction in their hands before they see a model of it. The lab then explains what they felt, instead of replacing it.</div></li>
+        <li><b>Lab: predict with a reason</b> <span class="dur">12 min</span>. Choose Box, Wood, Dry and test it: this is the baseline. Then change only the condition to Soapy. Each child predicts privately first (one finger for less time, two for more time, three for the same). Then the team taps a prediction and a "because".
+          <div class="say">"Does the lab agree with our real plank? What was the same? What was different?"</div></li>
+        <li><b>Brake test</b> <span class="dur">7 min</span>. Switch to Toy car. Test Road with Dry, then Wet, then Icy. Ask: "Did ice make the car roll down faster? What did it change?"
+          <div class="why"><b>Key idea:</b> low friction does not make a car faster; it makes it hard to stop. This protects children from the misconception "cars go faster on wet roads" and links science to road safety in the rainy season.</div></li>
+        <li><b>Force arrows and exit ticket</b> <span class="dur">5 min</span>. Point to the orange friction arrow. It always points opposite to the motion.</li>
+      </ol>
+
+      <h2>Groups, roles and different learners</h2>
+      <p>Two teams of three, each with one English reader and two Hindi readers. The roles are Driver (chooses and starts the test), Recorder (reads numbers aloud and writes them down) and Reporter (explains the result, in any language). Rotate after every test, so the Reporter is a different child each time.</p>
+      <ul>
+        <li><b>Support basic readers:</b> tap 🔊 to hear any question or result. Every surface has an icon. Let children answer by pointing at the screen or drawing.</li>
+        <li><b>Stretch strong readers:</b> in Explore mode, find the smallest angle at which the box moves on carpet. Explain why a car rolls well on ice but cannot stop. Read the speed–time graph and say which line shows the most friction.</li>
+      </ul>
+
+      <h2>Teaching moves to practise</h2>
+      <p><b>Prediction with "because".</b> A prediction without a reason is a guess. The lab asks for a reason, and after the result asks "Was your because right?" This checks the idea, not only the answer.</p>
+      <p><b>Wait time.</b> After a question, count five seconds silently. Children thinking in a second language need that time to translate their thought.</p>
+      <p><b>Fair test.</b> Before each test ask: What are we changing? What stays the same? What are we measuring? Simple mode locks the angle so the fair test is built in.</p>
+      <p><b>Using both languages.</b> Hindi readers already write "फ्रिक्शन". That is a bridge to the English word, not an error. Switch the lab language whenever it helps.</p>
+
+      <h2>Science notes for you</h2>
+      <div class="flag"><b>Why a box and a car?</b> A box slides, so friction with the surface slows it directly, just like the matchbox. A car's wheels roll, so surface grip hardly changes its rolling speed. Grip matters when the car brakes or turns. Showing both prevents a common, dangerous misconception.</div>
+      <div class="flag"><b>Force arrows.</b> Blue is the pull down the slope (part of gravity). Orange is friction. When the box does not move on sand, the two arrows are equal: balanced forces, which links to topic 4.3.</div>
+      <div class="flag"><b>Friction can hold things still.</b> The Learner's Book says friction acts on moving objects. That is a fine simple version. The stuck box shows friction can also stop something from starting to move.</div>
+      <div class="flag"><b>Surface area.</b> The book suggests a bigger surface gives more friction. For hard, dry surfaces, friction depends mainly on the materials and how hard they press together, not much on area. If the matchbox and shoebox behave almost the same, that is a correct observation.</div>
+
+      <h2>Assessment rubric</h2>
+      <div class="tablewrap"><table class="rubric">
+        <thead><tr><th>Skill</th><th>Beginning</th><th>Developing</th><th>Secure</th></tr></thead>
+        <tbody>
+          <tr><td>Explains friction</td><td>Says "it slows things" with help</td><td>Says friction acts between two surfaces and slows motion</td><td>Explains rough and slippery surfaces, and that friction changes motion energy into heat</td></tr>
+          <tr><td>Predicts with a reason</td><td>Predicts without a reason</td><td>Gives a reason linked to the surface</td><td>Uses friction in the reason and checks it against the result</td></tr>
+          <tr><td>Fair test</td><td>Changes several things at once</td><td>Keeps the angle the same when reminded</td><td>Explains why only one thing should change</td></tr>
+          <tr><td>Forces</td><td>Draws one arrow</td><td>Draws friction opposite to motion</td><td>Explains balanced forces when the box does not move</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Exit ticket:</b> 1) Which surface had the most friction? How do you know? 2) Draw the friction arrow on a box sliding down a ramp. 3) Why is it dangerous to drive fast on a wet road? Answers can be in Hindi, English or a drawing. Assess the science, not the language.</p>
+
+      <h2>After class: reflect</h2>
+      <ul>
+        <li>Which child spoke the least? How can I give them the Reporter role next time?</li>
+        <li>Did I wait five seconds after my questions?</li>
+        <li>Which "because" surprised me, and what does it tell me about their thinking?</li>
+      </ul>
+      <div class="why"><b>This week, practise one habit:</b> wait time. Add the next habit only when it feels natural.</div>
+    </article>
+
+    <article class="guide" id="guide-hi" lang="hi" style="display:none">
+      <h2>क्लास से पहले</h2>
+      <p>यह लैब Cambridge Primary Science Stage 6, यूनिट 4.6 (फ्रिक्शन) और 4.7 (फ्रिक्शन की जाँच) से जुड़ी है। आपको चाहिए: एक स्क्रीन (प्रोजेक्टर या एक लैपटॉप काफ़ी है; दो डिवाइस हों तो हर टीम को एक दें), एक लकड़ी का तख़्ता, एक माचिस की डिब्बी, लिक्विड साबुन और फ़ोन का टाइमर।</p>
+      <p><b>आसान</b> मोड से शुरू करें। इसमें रैम्प का एंगल लॉक रहता है और ज़्यादा नंबर नहीं दिखते, जिससे कम पढ़ पाने वाले बच्चों को आसानी होती है। <b>और खोजो</b> मोड में फ्रिक्शन स्लाइडर, एंगल स्लाइडर, स्पीड-टाइम ग्राफ़ और एनर्जी का डेटा है। इसे तेज़ बच्चों के लिए या अगली क्लास में इस्तेमाल करें।</p>
+
+      <h2>क्लास का क्रम (40 मिनट)</h2>
+      <ol>
+        <li><b>शुरुआत</b> <span class="dur">4 मिनट</span>। सभी बच्चे 30 सेकंड तक हाथ तेज़ी से रगड़ें। पूछें: हाथ गरम क्यों हुए? सारे जवाब बोर्ड पर लिखें, अभी सुधारें नहीं।</li>
+        <li><b>पहले असली एक्सपेरिमेंट</b> <span class="dur">12 मिनट</span>। Learner's Book की एक्टिविटी 4.7 करें: सूखे तख़्ते पर और फिर साबुन वाले तख़्ते पर माचिस की डिब्बी का टाइम तीन-तीन बार नापें।
+          <div class="why"><b>पहले क्यों:</b> बच्चे पहले अपने हाथों से फ्रिक्शन महसूस करें, फिर उसका मॉडल देखें। लैब असली अनुभव को समझाती है, उसकी जगह नहीं लेती।</div></li>
+        <li><b>लैब: कारण के साथ प्रेडिक्शन</b> <span class="dur">12 मिनट</span>। डिब्बा, लकड़ी, सूखा चुनकर टेस्ट करें। यह तुलना का आधार है। फिर सिर्फ़ कंडीशन बदलकर साबुन वाला करें। हर बच्चा पहले चुपचाप उँगलियों से प्रेडिक्ट करे (एक उँगली = कम टाइम, दो = ज़्यादा टाइम, तीन = उतना ही)। फिर टीम प्रेडिक्शन और "क्योंकि" चुने।
+          <div class="say">"क्या लैब हमारे असली तख़्ते वाले रिज़ल्ट से मिलती है? क्या एक जैसा था? क्या अलग था?"</div></li>
+        <li><b>ब्रेक टेस्ट</b> <span class="dur">7 मिनट</span>। खिलौना कार चुनें। सड़क पर सूखा, फिर गीला, फिर बर्फ़ वाला टेस्ट करें। पूछें: "क्या बर्फ़ से कार ढलान पर तेज़ चली? बर्फ़ ने क्या बदला?"
+          <div class="why"><b>मुख्य बात:</b> कम फ्रिक्शन से कार तेज़ नहीं होती, बल्कि उसे रोकना मुश्किल हो जाता है। इससे यह गलतफ़हमी नहीं बनती कि "गीली सड़क पर कार तेज़ चलती है", और बारिश में सड़क सुरक्षा से जुड़ाव बनता है।</div></li>
+        <li><b>फ़ोर्स के तीर और एग्ज़िट टिकट</b> <span class="dur">5 मिनट</span>। नारंगी फ्रिक्शन वाले तीर को दिखाएँ। वह हमेशा चलने की उल्टी दिशा में होता है।</li>
+      </ol>
+
+      <h2>ग्रुप, रोल और अलग-अलग बच्चे</h2>
+      <p>तीन-तीन बच्चों की दो टीमें बनाएँ। हर टीम में एक English पढ़ने वाला और दो हिंदी पढ़ने वाले बच्चे हों। रोल: ड्राइवर (चुनता है और टेस्ट शुरू करता है), रिकॉर्डर (नंबर बोलकर लिखता है), रिपोर्टर (किसी भी भाषा में रिज़ल्ट समझाता है)। हर टेस्ट के बाद रोल बदलें, ताकि हर बार नया बच्चा रिपोर्टर बने।</p>
+      <ul>
+        <li><b>कम पढ़ पाने वाले बच्चों के लिए:</b> 🔊 दबाकर सवाल या रिज़ल्ट सुन सकते हैं। हर सरफेस का आइकन है। बच्चे स्क्रीन पर उँगली रखकर या चित्र बनाकर भी जवाब दे सकते हैं।</li>
+        <li><b>तेज़ बच्चों के लिए चुनौती:</b> "और खोजो" मोड में पता करो कि कालीन पर सबसे कम किस एंगल पर डिब्बा चलता है। समझाओ कि बर्फ़ पर कार अच्छी तरह लुढ़कती है पर रुक क्यों नहीं पाती। स्पीड-टाइम ग्राफ़ में बताओ कि किस लाइन में सबसे ज़्यादा फ्रिक्शन है।</li>
+      </ul>
+
+      <h2>अभ्यास करने लायक तरीके</h2>
+      <p><b>"क्योंकि" के साथ प्रेडिक्शन।</b> बिना कारण का प्रेडिक्शन सिर्फ़ अंदाज़ा है। लैब कारण पूछती है और रिज़ल्ट के बाद पूछती है "क्या तुम्हारा क्योंकि सही था?" इससे सिर्फ़ जवाब नहीं, सोच की जाँच होती है।</p>
+      <p><b>इंतज़ार का समय।</b> सवाल पूछने के बाद मन में पाँच तक गिनें। दूसरी भाषा में सोचने वाले बच्चों को अपनी बात ढूँढने के लिए यह समय चाहिए।</p>
+      <p><b>फ़ेयर टेस्ट।</b> हर टेस्ट से पहले पूछें: हम क्या बदल रहे हैं? क्या वैसा ही रख रहे हैं? क्या नाप रहे हैं? आसान मोड में एंगल लॉक है, इसलिए फ़ेयर टेस्ट अपने आप बनता है।</p>
+      <p><b>दोनों भाषाओं का इस्तेमाल।</b> बच्चे "फ्रिक्शन" लिखते हैं, यह गलती नहीं, English शब्द तक पहुँचने का पुल है। ज़रूरत हो तो लैब की भाषा बदल दें।</p>
+
+      <h2>आपके लिए विज्ञान की बातें</h2>
+      <div class="flag"><b>डिब्बा और कार दोनों क्यों?</b> डिब्बा फिसलता है, इसलिए सरफेस का फ्रिक्शन उसे सीधे धीमा करता है, बिल्कुल माचिस की डिब्बी की तरह। कार के पहिए लुढ़कते हैं, इसलिए सरफेस की पकड़ से उसकी लुढ़कने की स्पीड ज़्यादा नहीं बदलती। पकड़ का असर ब्रेक लगाने और मुड़ने पर होता है।</div>
+      <div class="flag"><b>फ़ोर्स के तीर।</b> नीला तीर ढलान का खिंचाव है (ग्रैविटी का हिस्सा)। नारंगी तीर फ्रिक्शन है। रेत पर डिब्बा नहीं चलता, तो दोनों तीर बराबर होते हैं: बैलेंस्ड फ़ोर्स, जो टॉपिक 4.3 से जुड़ता है।</div>
+      <div class="flag"><b>फ्रिक्शन चीज़ों को रोककर भी रखता है।</b> किताब कहती है फ्रिक्शन चलती चीज़ों पर लगता है। यह आसान रूप ठीक है। पर अटका हुआ डिब्बा दिखाता है कि फ्रिक्शन किसी चीज़ को चलने से रोक भी सकता है।</div>
+      <div class="flag"><b>सरफेस का एरिया।</b> किताब कहती है बड़ा सरफेस यानी ज़्यादा फ्रिक्शन। सख़्त, सूखी सतहों पर फ्रिक्शन मुख्य रूप से मटीरियल और दबाव पर निर्भर करता है, एरिया पर ज़्यादा नहीं। अगर माचिस और जूते का डिब्बा लगभग एक जैसे चलें, तो बच्चों का अवलोकन सही है।</div>
+
+      <h2>आकलन रूब्रिक</h2>
+      <div class="tablewrap"><table class="rubric">
+        <thead><tr><th>कौशल</th><th>शुरुआत</th><th>विकसित हो रहा</th><th>पक्का</th></tr></thead>
+        <tbody>
+          <tr><td>फ्रिक्शन समझाना</td><td>मदद से कहता है "चीज़ें धीमी होती हैं"</td><td>कहता है फ्रिक्शन दो सतहों के बीच लगकर मोशन धीमा करता है</td><td>खुरदुरी और फिसलन वाली सतह का फ़र्क और हीट बनना समझाता है</td></tr>
+          <tr><td>कारण के साथ प्रेडिक्शन</td><td>बिना कारण प्रेडिक्ट करता है</td><td>सरफेस से जुड़ा कारण देता है</td><td>कारण में फ्रिक्शन का इस्तेमाल करके रिज़ल्ट से जाँचता है</td></tr>
+          <tr><td>फ़ेयर टेस्ट</td><td>एक साथ कई चीज़ें बदलता है</td><td>याद दिलाने पर एंगल वही रखता है</td><td>समझाता है कि एक ही चीज़ क्यों बदलनी चाहिए</td></tr>
+          <tr><td>फ़ोर्स</td><td>एक तीर बनाता है</td><td>फ्रिक्शन को मोशन के उल्टा दिखाता है</td><td>डिब्बा न चलने पर बैलेंस्ड फ़ोर्स समझाता है</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>एग्ज़िट टिकट:</b> 1) किस सरफेस पर सबसे ज़्यादा फ्रिक्शन था? कैसे पता? 2) ढलान से फिसलते डिब्बे पर फ्रिक्शन का तीर बनाओ। 3) गीली सड़क पर तेज़ गाड़ी चलाना ख़तरनाक क्यों है? जवाब हिंदी, English या चित्र में हो सकते हैं। भाषा नहीं, विज्ञान की समझ जाँचें।</p>
+
+      <h2>क्लास के बाद: सोचें</h2>
+      <ul>
+        <li>कौन सा बच्चा सबसे कम बोला? अगली बार उसे रिपोर्टर कैसे बनाऊँ?</li>
+        <li>क्या मैंने सवाल के बाद पाँच सेकंड इंतज़ार किया?</li>
+        <li>किस बच्चे के "क्योंकि" ने मुझे चौंकाया, और उससे उसकी सोच के बारे में क्या पता चलता है?</li>
+      </ul>
+      <div class="why"><b>इस हफ़्ते एक आदत का अभ्यास करें:</b> इंतज़ार का समय। जब यह सहज हो जाए, तब अगली आदत जोड़ें।</div>
+    </article>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+const L=2.5, FLOOR=40, G=9.8, BRAKE_AT=1.0, WHEEL_R=0.07;
+const LEN={box:0.36, car:0.5};
+const MATS=[
+  {id:'tiles', mu:0.18, cr:0.012, em:'🔲', color:'#BCD6E8', en:'Smooth tiles', hi:'चिकनी टाइल्स'},
+  {id:'wood',  mu:0.28, cr:0.02,  em:'🪵', color:'#C98B4F', en:'Wood',         hi:'लकड़ी'},
+  {id:'road',  mu:0.38, cr:0.025, em:'🛣️', color:'#5A5F66', en:'Tar road',     hi:'सड़क (तारकोल)'},
+  {id:'carpet',mu:0.48, cr:0.06,  em:'🧶', color:'#B8434E', en:'Carpet',       hi:'कालीन'},
+  {id:'sand',  mu:0.58, cr:0.14,  em:'🏖️', color:'#D9B56B', en:'Sand',         hi:'रेत'}
+];
+const CONDS=[
+  {id:'dry',  k:1,   em:'☀️', en:'Dry',   hi:'सूखा'},
+  {id:'wet',  k:0.7, em:'🌧️', en:'Wet',   hi:'गीला'},
+  {id:'soapy',k:0.4, em:'🧼', en:'Soapy', hi:'साबुन वाला'},
+  {id:'icy',  k:0.2, em:'🧊', en:'Icy',   hi:'बर्फ़ वाला'}
+];
+const RUNCOLORS=['#2B6CD4','#E4572E','#2E8B57','#8E44AD','#D19A00','#149C9C','#C2185B','#6D4C41'];
+const WORDS=[
+  ['Friction','फ्रिक्शन','घर्षण, रगड़'],['Force','फ़ोर्स','बल'],['Surface','सरफेस','सतह'],
+  ['Speed','स्पीड','चाल, गति'],['Rough','रफ़','खुरदुरा'],['Smooth','स्मूथ','चिकना'],
+  ['Slope','स्लोप','ढलान'],['Grip','ग्रिप','पकड़'],['Brake','ब्रेक','रोकना'],
+  ['Heat energy','हीट एनर्जी','ऊष्मा, गर्मी'],['Prediction','प्रेडिक्शन','अनुमान'],['Fair test','फ़ेयर टेस्ट','सही तुलना']
+];
+const REASONS=['rough','smooth','slippery','steeper','notsure'];
+const T={
+ en:{title:'Friction Ramp Lab',sub:'Test how surfaces change motion.',simple:'Simple',explore:'Explore',tabLab:'Lab',tabTeacher:'Teacher guide',
+  step1:'1. Choose',step2:'2. Predict',step3:'3. Test',object:'What goes down the ramp?',box:'Box (slides)',car:'Toy car (brake test)',
+  material:'Surface',condition:'Condition',grip:'Grip',gripLv:['Very slippery','Slippery','Medium','Grippy','Very grippy'],
+  customFric:'Set friction yourself',custom:'Custom',angle:'Ramp angle',locked:'(locked for a fair test)',
+  fair:'Change only one thing each time. Keep the angle the same.',
+  qBox:'Will the box take less time or more time to reach the bottom than last time?',
+  qCar:'After braking, will the car stop in a shorter or longer distance than last time?',
+  predictFirst:'Do one test first. Then predict the next one.',
+  opt:{faster:'Less time (faster)',slower:'More time (slower)',shorter:'Shorter',longer:'Longer',same:'About the same'},
+  because:'Because…',
+  reason:{rough:'The surface is rougher',smooth:'The surface is smoother',slippery:'Water, soap or ice makes it slippery',steeper:'The ramp is steeper',notsure:'I am not sure yet'},
+  ownWords:'Or write it in your own words (Hindi or English)',needReason:'Choose a "because" before you test.',
+  go:'Start the test',reset:'Reset',slow:'Slow motion',forces:'Show force arrows',wobble:'Add small real-life differences',
+  pull:'Pull down slope',fric:'Friction',hold:'Friction holding',
+  rTime:'Time to reach bottom',rBrake:'Braking distance',rSpeed:'Speed now',rTop:'Top speed',rDist:'Slide on floor',rHeat:'Energy changed to heat',
+  didNotMove:'did not move',bars:'Results chart',barsBox:'time to bottom (s)',barsCar:'braking distance (m)',
+  graphTitle:'Speed over time',timeAxis:'time (s)',speedAxis:'speed (m/s)',
+  table:'Results table',clear:'Clear',colSurface:'Surface',colTime:'Time (s)',colFloor:'Floor slide (m)',colBrake:'Braking (m)',colPred:'Prediction',
+  empty:'No tests yet.',words:'Word wall (tap to listen)',
+  ready:'Choose a surface, predict, then start the test.',running:'Testing…',
+  msgBox:(t,d)=>`The box reached the bottom in ${t} s and slid ${d} m on the floor.`,
+  msgStuck:'The box did not move. Friction held it on the slope.',
+  msgCar:d=>`The car braked at the red line and stopped in ${d} m.`,
+  brakeLine:'Brake here',predRight:'Your prediction was right!',
+  predWrong:(p,r)=>`You predicted "${p}". The result was "${r}".`,
+  talk:'Was your "because" right? Talk with your team.',youSaid:'You said: '},
+ hi:{title:'फ्रिक्शन रैम्प लैब',sub:'देखो, सरफेस से मोशन कैसे बदलता है।',simple:'आसान',explore:'और खोजो',tabLab:'लैब',tabTeacher:'टीचर गाइड',
+  step1:'1. चुनो',step2:'2. प्रेडिक्ट करो',step3:'3. टेस्ट करो',object:'रैम्प से क्या नीचे जाएगा?',box:'डिब्बा (फिसलेगा)',car:'खिलौना कार (ब्रेक टेस्ट)',
+  material:'सरफेस',condition:'कंडीशन',grip:'ग्रिप',gripLv:['बहुत फिसलन','फिसलन','ठीक-ठाक','अच्छी पकड़','बहुत पकड़'],
+  customFric:'फ्रिक्शन खुद सेट करो',custom:'कस्टम',angle:'रैम्प का एंगल',locked:'(फ़ेयर टेस्ट के लिए लॉक)',
+  fair:'हर बार सिर्फ़ एक चीज़ बदलो। एंगल वही रखो।',
+  qBox:'डिब्बा नीचे पहुँचने में पिछली बार से कम टाइम लेगा या ज़्यादा?',
+  qCar:'ब्रेक लगने के बाद कार पिछली बार से कम दूरी में रुकेगी या ज़्यादा?',
+  predictFirst:'पहले एक टेस्ट करो। फिर अगले का प्रेडिक्शन करो।',
+  opt:{faster:'कम टाइम (तेज़)',slower:'ज़्यादा टाइम (धीमा)',shorter:'कम दूरी',longer:'ज़्यादा दूरी',same:'लगभग उतना ही'},
+  because:'क्योंकि…',
+  reason:{rough:'सरफेस ज़्यादा खुरदुरा है',smooth:'सरफेस ज़्यादा चिकना है',slippery:'पानी, साबुन या बर्फ़ से फिसलन है',steeper:'रैम्प ज़्यादा ढलान वाला है',notsure:'अभी पक्का नहीं पता'},
+  ownWords:'या अपने शब्दों में लिखो (हिंदी या English)',needReason:'टेस्ट से पहले एक "क्योंकि" चुनो।',
+  go:'टेस्ट शुरू करो',reset:'फिर से',slow:'स्लो मोशन',forces:'फ़ोर्स के तीर दिखाओ',wobble:'असली एक्सपेरिमेंट जैसे छोटे फ़र्क',
+  pull:'ढलान का खिंचाव',fric:'फ्रिक्शन',hold:'फ्रिक्शन पकड़े है',
+  rTime:'नीचे पहुँचने का टाइम',rBrake:'ब्रेक के बाद दूरी',rSpeed:'अभी की स्पीड',rTop:'टॉप स्पीड',rDist:'फ़र्श पर फिसला',rHeat:'हीट बनी एनर्जी',
+  didNotMove:'नहीं चला',bars:'रिज़ल्ट चार्ट',barsBox:'टाइम (s)',barsCar:'ब्रेकिंग दूरी (m)',
+  graphTitle:'टाइम के साथ स्पीड',timeAxis:'टाइम (s)',speedAxis:'स्पीड (m/s)',
+  table:'रिज़ल्ट टेबल',clear:'साफ़ करो',colSurface:'सरफेस',colTime:'टाइम (s)',colFloor:'फ़र्श पर (m)',colBrake:'ब्रेकिंग (m)',colPred:'प्रेडिक्शन',
+  empty:'अभी कोई टेस्ट नहीं।',words:'वर्ड वॉल (सुनने के लिए दबाओ)',
+  ready:'सरफेस चुनो, प्रेडिक्ट करो, फिर टेस्ट करो।',running:'टेस्ट चल रहा है…',
+  msgBox:(t,d)=>`डिब्बा ${t} s में नीचे पहुँचा। फ़र्श पर ${d} m फिसला।`,
+  msgStuck:'डिब्बा नहीं चला। फ्रिक्शन ने उसे ढलान पर पकड़ लिया।',
+  msgCar:d=>`लाल लाइन पर ब्रेक लगा। कार ${d} m में रुकी।`,
+  brakeLine:'यहाँ ब्रेक',predRight:'तुम्हारा प्रेडिक्शन सही था!',
+  predWrong:(p,r)=>`तुमने कहा "${p}"। हुआ "${r}"।`,
+  talk:'क्या तुम्हारा "क्योंकि" सही था? टीम से बात करो।',youSaid:'तुमने कहा: '}
+};
+
+let lang='en', mode='simple', obj='box', matId='wood', condId='dry', mu=0.28, custom=false, angle=30;
+let wobble=false, slowmo=false, showForces=true;
+let runs={box:[],car:[]}, pred=null, reason=null, particles=[], decor=[], raindrops=[], msgState={key:'ready'};
+let viewX=0, sim;
+const $=id=>document.getElementById(id);
+const scene=$('scene'), sctx=scene.getContext('2d');
+const graph=$('graph'), gctx=graph.getContext('2d');
+const bars=$('bars'), bctx=bars.getContext('2d');
+const rad=d=>d*Math.PI/180;
+const tr=()=>T[lang];
+const mat=()=>MATS.find(m=>m.id===matId);
+const cond=()=>CONDS.find(c=>c.id===condId);
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const len=()=>LEN[obj];
+const crNow=()=>mat().cr;
+
+function newSim(){ return {running:false,done:false,s:len()/2,v:0,t:0,maxV:0,rampTime:null,heat:0,trace:[{t:0,v:0}],lastTrace:0,
+  muRun:mu,crRun:crNow(),outcome:null,wheel:0,braking:false,brakeS:null,stuck:false}; }
+sim=newSim();
+
+/* ---------- ideal (noise-free) results, used to judge predictions fairly ---------- */
+function ideal(o,m,cr,ang){
+  const th=rad(ang), Lr=L-LEN[o]/2;
+  if(o==='box'){ const a=G*(Math.sin(th)-m*Math.cos(th)); if(a<=0) return {time:Infinity,val:Infinity};
+    const t=Math.sqrt(2*Lr/a); return {time:t,val:t}; }
+  const a=G*(Math.sin(th)-cr*Math.cos(th)); const v2=2*a*Lr-2*cr*G*BRAKE_AT;
+  return {time:Math.sqrt(2*Lr/a), val:Math.max(0,v2)/(2*m*G)};
+}
+function compare(o,prevVal,newVal){
+  if(prevVal===Infinity&&newVal===Infinity) return 'same';
+  if(newVal===Infinity) return o==='box'?'slower':'longer';
+  if(prevVal===Infinity) return o==='box'?'faster':'shorter';
+  const rel=(newVal-prevVal)/Math.max(prevVal,1e-3);
+  if(o==='box') return rel<-0.05?'faster':rel>0.05?'slower':'same';
+  return rel<-0.05?'shorter':rel>0.05?'longer':'same';
+}
+
+/* ---------- textures ---------- */
+function rng(seed){ let x=seed>>>0||1; return ()=>{ x^=x<<13; x^=x>>>17; x^=x<<5; return ((x>>>0)%10000)/10000; }; }
+function buildDecor(){
+  const r=rng(matId.length*977+condId.length*131+7); decor=[]; const total=L+FLOOR;
+  if(matId==='tiles') for(let s=0.2;s<total;s+=0.35) decor.push({type:'grout',s});
+  if(matId==='wood')  for(let s=0;s<total;s+=0.12) decor.push({type:'grain',s,o:r()*0.8-0.4,len:0.2+r()*0.35});
+  if(matId==='road')  for(let s=0.2;s<total;s+=0.6) decor.push({type:'dash',s});
+  if(matId==='carpet')for(let s=0.03;s<total;s+=0.06) decor.push({type:'dot',s,o:(Math.round(s/0.06)%2?0.25:-0.25)});
+  if(matId==='sand')  for(let s=0;s<total;s+=0.035) decor.push({type:'grit',s,o:r()*1.3-0.5,r:0.6+r()*1.6,tone:r()});
+  if(condId==='wet')  for(let s=0.4;s<total;s+=0.7+r()*0.5) decor.push({type:'puddle',s,w:0.25+r()*0.3});
+  if(condId==='soapy')for(let s=0.1;s<total;s+=0.09) decor.push({type:'bubble',s,r:0.3+r()*0.7,o:r()});
+  if(condId==='icy')  for(let s=0.3;s<total;s+=0.55) decor.push({type:'shine',s,len:0.2+r()*0.25});
+}
+
+/* ---------- geometry ---------- */
+let GEO={};
+function sizeCanvas(cv,ctx,w,h){ const dpr=window.devicePixelRatio||1; cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); cv._w=w; cv._h=h; }
+function resize(){
+  const w=scene.parentElement.clientWidth; if(!w) return;
+  const S=Math.min(105,Math.max(55,w/9.5));
+  const h=Math.round(L*Math.sin(rad(40))*S+150);
+  sizeCanvas(scene,sctx,w,h);
+  GEO={W:w,H:h,S,xb:30+L*Math.cos(rad(15))*S,yb:h-46,sw:Math.max(7,0.13*S)};
+  [[bars,bctx],[graph,gctx]].forEach(([cv,ctx])=>{ const pw=cv.parentElement.clientWidth-30; if(pw>0) sizeCanvas(cv,ctx,pw,Math.round(Math.max(200,Math.min(260,pw*0.5)))); });
+  drawBars(); drawGraph();
+}
+function pointAt(s){
+  const th=rad(angle), {S,xb,yb}=GEO;
+  const tx=xb-L*Math.cos(th)*S, ty=yb-L*Math.sin(th)*S;
+  if(s<=L) return {x:tx+s*Math.cos(th)*S, y:ty+s*Math.sin(th)*S, a:th};
+  return {x:xb+(s-L)*S, y:yb, a:0};
+}
+function pose(s){
+  const w=0.2, th=rad(angle); let p=pointAt(s), a=p.a;
+  if(Math.abs(s-L)<w){ const f=(s-(L-w))/(2*w); a=th*(1-f); const p1=pointAt(L-w), p2=pointAt(L+w); p={x:p1.x+(p2.x-p1.x)*f,y:p1.y+(p2.y-p1.y)*f}; }
+  const off=GEO.sw/2; return {x:p.x+Math.sin(a)*off, y:p.y-Math.cos(a)*off, a};
+}
+
+/* ---------- drawing ---------- */
+function drawScene(dt){
+  const {W,H,S,xb,yb,sw}=GEO, c=sctx, th=rad(angle);
+  const target=Math.max(0,Math.min(pose(sim.s).x-W*0.42, xb+FLOOR*S-W+30));
+  viewX+= (target-viewX)*Math.min(1,dt*4);
+  c.clearRect(0,0,W,H);
+  if(condId==='wet'){
+    c.strokeStyle='rgba(90,140,200,.35)'; c.lineWidth=1.2;
+    while(raindrops.length<60) raindrops.push({x:Math.random()*W,y:Math.random()*H,sp:260+Math.random()*160});
+    raindrops.forEach(d=>{ d.y+=d.sp*dt; d.x-=d.sp*dt*0.15; if(d.y>yb){d.y=-10;d.x=Math.random()*W*1.1;}
+      c.beginPath(); c.moveTo(d.x,d.y); c.lineTo(d.x+2,d.y-10); c.stroke(); });
+  }
+  c.fillStyle=cssv('--ground'); c.fillRect(0,yb+sw/2,W,H-yb);
+  c.save(); c.translate(-viewX,0);
+  const tx=xb-L*Math.cos(th)*S, ty=yb-L*Math.sin(th)*S, endX=xb+FLOOR*S;
+  c.fillStyle=cssv('--wedge'); c.strokeStyle=cssv('--wedge-edge'); c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(tx,ty); c.lineTo(xb,yb); c.lineTo(tx,yb+sw/2); c.closePath(); c.fill(); c.stroke();
+  c.strokeStyle=cssv('--muted'); c.lineWidth=1.2; c.beginPath(); c.arc(xb,yb,34,Math.PI,Math.PI+th); c.stroke();
+  c.fillStyle=cssv('--muted'); c.font='600 13px "Baloo 2",sans-serif'; c.textAlign='right'; c.fillText(angle+'°',xb-38,yb-8);
+  c.lineJoin='round'; c.strokeStyle=mat().color; c.lineWidth=sw;
+  c.beginPath(); c.moveTo(tx,ty); c.lineTo(xb,yb); c.lineTo(endX,yb); c.stroke();
+  const vis0=viewX-40, vis1=viewX+W+40;
+  decor.forEach(d=>{ if(d.type==='shine') return; const p=pointAt(d.s); if(p.x>vis0&&p.x<vis1) drawDecor(d,p); });
+  if(condId==='icy'){ const o=sw*0.2; c.strokeStyle='rgba(220,242,255,.78)'; c.lineWidth=sw*0.55;
+    c.beginPath(); c.moveTo(tx+Math.sin(th)*o,ty-Math.cos(th)*o); c.lineTo(xb+Math.sin(th)*o*0.5,yb-o); c.lineTo(endX,yb-o); c.stroke();
+    decor.filter(d=>d.type==='shine').forEach(d=>{ const p=pointAt(d.s); if(p.x>vis0&&p.x<vis1) drawDecor(d,p); }); }
+  // floor marks
+  c.fillStyle=cssv('--ink'); c.font='600 12px "Baloo 2",sans-serif'; c.textAlign='center'; c.globalAlpha=.75;
+  const every=S>70?1:2;
+  for(let m=1;m<=FLOOR;m++){ const x=xb+m*S; if(x<vis0||x>vis1) continue; c.fillRect(x-0.75,yb+sw/2,1.5,7); if(m%every===0) c.fillText(m+' m',x,yb+sw/2+20); }
+  c.globalAlpha=1;
+  // brake line (car)
+  if(obj==='car'){ const bx=xb+BRAKE_AT*S; c.strokeStyle='#D7263D'; c.lineWidth=3; c.setLineDash([6,4]);
+    c.beginPath(); c.moveTo(bx,yb+sw/2); c.lineTo(bx,yb-0.9*S); c.stroke(); c.setLineDash([]);
+    c.fillStyle='#D7263D'; c.textAlign='center'; c.font='700 13px "Baloo 2",sans-serif'; c.fillText(tr().brakeLine,bx,yb-0.9*S-6);
+    if(sim.brakeS!==null){ const a=pointAt(sim.brakeS), b=pointAt(sim.s); c.strokeStyle='rgba(20,20,20,.55)'; c.lineWidth=3;
+      c.beginPath(); c.moveTo(a.x,yb-sw/2+2); c.lineTo(b.x,yb-sw/2+2); c.stroke(); } }
+  // end wall
+  c.fillStyle=cssv('--wedge-edge'); c.fillRect(endX,yb-0.5*S-sw/2,Math.max(8,0.12*S),0.5*S+sw);
+  // start flag
+  const fp=pointAt(0); c.strokeStyle=cssv('--ink'); c.lineWidth=2;
+  c.beginPath(); c.moveTo(fp.x+4,fp.y-sw/2); c.lineTo(fp.x+4,fp.y-sw/2-0.55*S); c.stroke();
+  c.fillStyle='#D7263D'; c.beginPath(); c.moveTo(fp.x+4,fp.y-sw/2-0.55*S); c.lineTo(fp.x+4+0.28*S,fp.y-sw/2-0.47*S); c.lineTo(fp.x+4,fp.y-sw/2-0.39*S); c.fill();
+  particles.forEach(p=>{ c.globalAlpha=Math.max(0,p.life); c.fillStyle=cssv('--heat'); c.beginPath(); c.arc(p.x,p.y,p.r,0,7); c.fill(); });
+  c.globalAlpha=1;
+  if(obj==='box') drawBox(); else drawCar();
+  if(showForces) drawForces();
+  c.restore();
+}
+function drawDecor(d,p){
+  const c=sctx, sw=GEO.sw, S=GEO.S;
+  const nx=Math.sin(p.a), ny=-Math.cos(p.a), dx=Math.cos(p.a), dy=Math.sin(p.a);
+  const at=(o,al=0)=>({x:p.x+nx*o*sw/2+dx*al*S, y:p.y+ny*o*sw/2+dy*al*S});
+  c.save();
+  switch(d.type){
+    case 'grout':{const a=at(1),b=at(-1); c.strokeStyle='rgba(255,255,255,.9)'; c.lineWidth=1.5; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); break;}
+    case 'grain':{const a=at(d.o),b=at(d.o,d.len); c.strokeStyle='rgba(110,60,20,.55)'; c.lineWidth=1.2; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); break;}
+    case 'dash':{ if(sw<9) break; const a=at(0),b=at(0,0.3); c.strokeStyle='#F3F3F3'; c.lineWidth=2; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); break;}
+    case 'dot':{const a=at(d.o); c.fillStyle='rgba(90,20,30,.55)'; c.beginPath(); c.arc(a.x,a.y,1.4,0,7); c.fill(); break;}
+    case 'grit':{const a=at(d.o); c.fillStyle=d.tone<.33?'#9C7A3C':d.tone<.66?'#E9CF93':'#7D6A55'; c.beginPath(); c.arc(a.x,a.y,d.r,0,7); c.fill(); break;}
+    case 'puddle':{const a=at(0.9); c.fillStyle='rgba(80,140,220,.45)'; c.translate(a.x,a.y); c.rotate(p.a); c.beginPath(); c.ellipse(0,0,d.w*S/2,Math.max(2,sw*0.22),0,0,7); c.fill(); break;}
+    case 'bubble':{const a=at(1.1+d.o*0.8); c.strokeStyle='rgba(120,150,190,.8)'; c.fillStyle='rgba(255,255,255,.65)'; c.lineWidth=1; c.beginPath(); c.arc(a.x,a.y,1.5+d.r*3,0,7); c.fill(); c.stroke(); break;}
+    case 'shine':{const a=at(0.6),b=at(0.6,d.len); c.strokeStyle='rgba(255,255,255,.95)'; c.lineWidth=2; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); break;}
+  }
+  c.restore();
+}
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function objPx(){ return Math.max(obj==='box'?24:32, len()*GEO.S); }
+function drawBox(){
+  const c=sctx, p=pose(sim.s), bl=objPx(), bh=bl*0.55;
+  c.save(); c.translate(p.x,p.y); c.rotate(p.a);
+  c.fillStyle='#F2C14E'; c.strokeStyle='#8A5A12'; c.lineWidth=1.5; rr(c,-bl/2,-bh,bl,bh,3); c.fill(); c.stroke();
+  c.fillStyle='#7A3E12'; c.fillRect(-bl/2+1,-bh*0.28,bl-2,bh*0.18);
+  c.fillStyle='#D7263D'; rr(c,-bl*0.22,-bh*0.85,bl*0.44,bh*0.42,3); c.fill();
+  c.restore();
+}
+function drawCar(){
+  const c=sctx, p=pose(sim.s), cl=objPx(), r=cl*0.14;
+  c.save(); c.translate(p.x,p.y); c.rotate(p.a);
+  c.fillStyle='#F5B700'; c.strokeStyle='#9C7200'; c.lineWidth=1.5;
+  const by=-r-cl*0.30, bh=cl*0.24;
+  rr(c,-cl/2,by,cl,bh,bh*0.35); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(-cl*0.30,by); c.lineTo(-cl*0.18,by-cl*0.2); c.lineTo(cl*0.14,by-cl*0.2); c.lineTo(cl*0.28,by); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle='#BFE3FF';
+  c.beginPath(); c.moveTo(-cl*0.24,by-2); c.lineTo(-cl*0.15,by-cl*0.16); c.lineTo(-cl*0.03,by-cl*0.16); c.lineTo(-cl*0.03,by-2); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(cl*0.01,by-2); c.lineTo(cl*0.01,by-cl*0.16); c.lineTo(cl*0.12,by-cl*0.16); c.lineTo(cl*0.22,by-2); c.closePath(); c.fill();
+  c.fillStyle= sim.braking&&sim.running ? '#FF2A2A' : '#8B1A1A'; c.fillRect(-cl/2-1,by+bh*0.2,Math.max(3,cl*0.05),bh*0.35);
+  [-cl*0.3,cl*0.3].forEach(wx=>{ c.save(); c.translate(wx,-r); c.fillStyle=cssv('--tyre'); c.beginPath(); c.arc(0,0,r,0,7); c.fill();
+    c.rotate(sim.wheel); c.fillStyle='#C9CED6'; c.beginPath(); c.arc(0,0,r*0.5,0,7); c.fill();
+    c.strokeStyle=cssv('--tyre'); c.lineWidth=Math.max(1.5,r*0.18); c.beginPath(); c.moveTo(-r*0.5,0); c.lineTo(r*0.5,0); c.moveTo(0,-r*0.5); c.lineTo(0,r*0.5); c.stroke(); c.restore(); });
+  c.restore();
+}
+function forces(){
+  // returns per-unit-mass forces along the path direction
+  const th=rad(angle), onRamp=sim.s<L, pull=onRamp?G*Math.sin(th):0;
+  let f=0, label='fric';
+  if(sim.stuck){ f=pull; label='hold'; }
+  else if(sim.running){
+    if(obj==='box') f=sim.muRun*G*(onRamp?Math.cos(th):1);
+    else f=(sim.braking?sim.muRun:sim.crRun)*G*(onRamp?Math.cos(th):1);
+  }
+  return {pull,f,label,onRamp};
+}
+function arrow(c,x,y,dx,dy,lenPx,col,text){
+  if(lenPx<2) return; const L2=Math.max(10,lenPx), ex=x+dx*L2, ey=y+dy*L2, hs=Math.min(10,4+L2*0.15);
+  c.strokeStyle=col; c.fillStyle=col; c.lineWidth=4; c.lineCap='round';
+  c.beginPath(); c.moveTo(x,y); c.lineTo(ex-dx*hs*0.6,ey-dy*hs*0.6); c.stroke();
+  const ang=Math.atan2(dy,dx); c.beginPath(); c.moveTo(ex,ey);
+  c.lineTo(ex-hs*Math.cos(ang-0.5),ey-hs*Math.sin(ang-0.5)); c.lineTo(ex-hs*Math.cos(ang+0.5),ey-hs*Math.sin(ang+0.5)); c.closePath(); c.fill();
+  c.font='700 13px "Baloo 2",sans-serif'; c.textAlign=dx>=0?'left':'right';
+  const pad=dx>=0?6:-6; c.lineWidth=4; c.strokeStyle=cssv('--sky2'); c.strokeText(text,ex+pad,ey-8); c.fillText(text,ex+pad,ey-8);
+}
+function drawForces(){
+  const c=sctx, p=pose(sim.s), F=forces(), K=GEO.S*0.26, h=obj==='box'?objPx()*0.3:objPx()*0.25;
+  const cx=p.x+Math.sin(p.a)*h, cy=p.y-Math.cos(p.a)*h, dx=Math.cos(p.a), dy=Math.sin(p.a);
+  if(F.pull>0) arrow(c,cx,cy,dx,dy,F.pull*K,cssv('--pull'),tr().pull);
+  if(F.f>0) arrow(c,cx,cy,-dx,-dy,F.f*K,cssv('--fric'),tr()[F.label]);
+}
+
+/* ---------- physics ---------- */
+function step(h){
+  const th=rad(angle), onRamp=sim.s<L;
+  if(obj==='box'){
+    if(onRamp){
+      const a=G*(Math.sin(th)-sim.muRun*Math.cos(th));
+      if(sim.v<=1e-6&&a<=0){ sim.stuck=true; finish('stuck'); return; }
+      sim.v+=a*h; sim.heat+=sim.muRun*G*Math.cos(th)*sim.v*h;
+    } else { sim.v-=sim.muRun*G*h; if(sim.v<=0){ sim.v=0; finish('stop'); return; } sim.heat+=sim.muRun*G*sim.v*h; }
+  } else {
+    if(onRamp){ const a=G*(Math.sin(th)-sim.crRun*Math.cos(th)); sim.v+=a*h; sim.heat+=sim.crRun*G*Math.cos(th)*sim.v*h; }
+    else {
+      if(!sim.braking && sim.s-L>=BRAKE_AT){ sim.braking=true; sim.brakeS=sim.s; }
+      const m=sim.braking?sim.muRun:sim.crRun;
+      sim.v-=m*G*h; if(sim.v<=0){ sim.v=0; finish('stop'); return; } sim.heat+=m*G*sim.v*h;
+    }
+  }
+  sim.s+=sim.v*h; sim.t+=h;
+  if(obj==='car'&&!sim.braking) sim.wheel+=sim.v*h/WHEEL_R;
+  if(sim.s>=L&&sim.rampTime===null) sim.rampTime=sim.t;
+  if(sim.v>sim.maxV) sim.maxV=sim.v;
+  if(sim.t-sim.lastTrace>=0.03){ sim.trace.push({t:sim.t,v:sim.v}); sim.lastTrace=sim.t; }
+  if(sim.s>=L+FLOOR-len()/2){ sim.s=L+FLOOR-len()/2; finish('stop'); }
+}
+function energyTotal(){ return G*Math.sin(rad(angle))*(L-len()/2); }
+function spawnHeat(dt){
+  if(!sim.running||sim.v<0.05) return;
+  const m = obj==='box'?sim.muRun:(sim.braking?sim.muRun:sim.crRun);
+  let n=m*sim.v*14*dt;
+  while(n>0){ if(Math.random()<n){ const p=pose(sim.s), bl=objPx(), side=obj==='car'?(Math.random()<.5?-0.3:0.3):(Math.random()-0.5)*0.8;
+      particles.push({x:p.x+Math.cos(p.a)*bl*side,y:p.y+Math.sin(p.a)*bl*side,vx:-20-Math.random()*30,vy:-25-Math.random()*35,r:1.5+Math.random()*2.5*Math.min(1,m*3),life:1}); }
+    n-=1; }
+}
+function updateParticles(dt){ particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt*1.6;}); particles=particles.filter(p=>p.life>0); }
+
+/* ---------- run control ---------- */
+function start(){
+  if(sim.running) return;
+  if(pred && !reason && !$('ownWords').value.trim()){ $('needReason').style.display='block'; return; }
+  sim=newSim(); particles=[];
+  const j=()=>wobble?(1+(Math.random()-0.5)*0.08):1;
+  sim.muRun=mu*j(); sim.crRun=crNow()*j();
+  sim.running=true; msgState={key:'running'}; renderMsg(); lock(true);
+}
+function finish(outcome){
+  sim.running=false; sim.done=true; sim.outcome=outcome; sim.trace.push({t:sim.t,v:sim.v});
+  const list=runs[obj], prev=list[list.length-1];
+  const id=ideal(obj,mu,crNow(),angle);
+  let actual=null, right=null;
+  if(prev&&pred){ actual=compare(obj,prev.ideal,id.val); right=actual===pred; }
+  const measured = obj==='box' ? (outcome==='stuck'?Infinity:sim.rampTime) : (sim.brakeS!==null?sim.s-sim.brakeS:0);
+  const run={n:list.length+1, custom, matId, condId, mu, angle, ideal:id.val, value:measured,
+    time:outcome==='stuck'?Infinity:sim.rampTime, floor:Math.max(0,sim.s-L), top:sim.maxV, outcome,
+    pred, reason, own:$('ownWords').value.trim(), actual, right, color:RUNCOLORS[list.length%RUNCOLORS.length], trace:sim.trace.slice()};
+  list.push(run);
+  msgState={key:'result',run};
+  pred=null; reason=null; $('ownWords').value='';
+  lock(false); renderPred(); renderTable(); renderMsg(); drawBars(); drawGraph();
+}
+function resetSim(){ sim=newSim(); particles=[]; viewX=0; msgState={key:'ready'}; renderMsg(); lock(false); drawGraph(); }
+
+/* ---------- UI ---------- */
+function surfLabel(r){ if(r.custom) return tr().custom+' '+r.mu.toFixed(2);
+  const m=MATS.find(x=>x.id===r.matId), k=CONDS.find(x=>x.id===r.condId); return m.em+k.em+' '+m[lang]+', '+k[lang]; }
+function gripLevel(v){ return v<0.08?0:v<0.16?1:v<0.3?2:v<0.45?3:4; }
+function renderChoose(){
+  const oc=$('objChips'); oc.innerHTML='';
+  [['box','📦'],['car','🚗']].forEach(([id,em])=>{ const b=document.createElement('button'); b.className='chip';
+    b.setAttribute('aria-pressed',String(obj===id)); b.innerHTML=`<span class="em">${em}</span>${tr()[id]}`;
+    b.onclick=()=>{ if(obj===id) return; obj=id; pred=null; reason=null; resetSim(); renderAll(); }; oc.appendChild(b); });
+  const mc=$('matChips'); mc.innerHTML='';
+  MATS.forEach(m=>{ const b=document.createElement('button'); b.className='chip'; b.setAttribute('aria-pressed',String(!custom&&m.id===matId));
+    b.innerHTML=`<span class="em">${m.em}</span>${m[lang]}`; b.onclick=()=>{ matId=m.id; custom=false; applySurface(); }; mc.appendChild(b); });
+  const cc=$('condChips'); cc.innerHTML='';
+  CONDS.forEach(k=>{ const b=document.createElement('button'); b.className='chip'; b.setAttribute('aria-pressed',String(!custom&&k.id===condId));
+    b.innerHTML=`<span class="em">${k.em}</span>${k[lang]}`; b.onclick=()=>{ condId=k.id; custom=false; applySurface(); }; cc.appendChild(b); });
+  const lv=gripLevel(mu); document.querySelectorAll('#gripBar i').forEach((el,i)=>el.classList.toggle('on',i<=lv));
+  $('gripLabel').textContent=tr().gripLv[lv]+(custom?' ('+tr().custom+')':'');
+  $('muVal').textContent=mu.toFixed(2);
+  if(sim.running) lock(true);
+}
+function applySurface(){ mu=Math.round(mat().mu*cond().k*100)/100; $('muSlider').value=mu; buildDecor(); raindrops=[]; afterChange(); }
+function afterChange(){ renderChoose(); if(sim.done) resetSim(); }
+function setMu(v){ mu=Math.min(0.7,Math.max(0.02,Math.round(v*100)/100)); $('muSlider').value=mu; custom=true; afterChange(); }
+function renderPred(){
+  const t=tr(), has=runs[obj].length>0;
+  $('qText').textContent= has?(obj==='box'?t.qBox:t.qCar):t.predictFirst;
+  const keys= obj==='box'?['faster','slower','same']:['shorter','longer','same'];
+  const po=$('predOpts'); po.innerHTML='';
+  if(has) keys.forEach(k=>{ const b=document.createElement('button'); b.className='chip'; b.setAttribute('aria-pressed',String(pred===k));
+    b.textContent=t.opt[k]; b.disabled=sim.running; b.onclick=()=>{ pred= pred===k?null:k; if(!pred) reason=null; $('needReason').style.display='none'; renderPred(); }; po.appendChild(b); });
+  $('reasonBox').style.display= pred?'block':'none';
+  const rc=$('reasonChips'); rc.innerHTML='';
+  REASONS.forEach(k=>{ const b=document.createElement('button'); b.className='chip'; b.setAttribute('aria-pressed',String(reason===k));
+    b.textContent=t.reason[k]; b.disabled=sim.running; b.onclick=()=>{ reason= reason===k?null:k; $('needReason').style.display='none'; renderPred(); }; rc.appendChild(b); });
+  $('ownWords').placeholder=t.ownWords; $('needReason').textContent=t.needReason;
+}
+function lock(on){
+  document.querySelectorAll('#objChips button,#matChips button,#condChips button,#predOpts button,#reasonChips button').forEach(b=>b.disabled=on);
+  ['muSlider','muUp','muDown','angSlider','goBtn','ownWords'].forEach(id=>$(id).disabled=on);
+}
+function msgText(){
+  const t=tr();
+  if(msgState.key==='ready') return {main:t.ready,cls:''};
+  if(msgState.key==='running') return {main:t.running,cls:''};
+  const r=msgState.run; let main='', cls='', talk='';
+  if(r.outcome==='stuck'){ main=t.msgStuck; cls='warn'; }
+  else if(obj==='box') main=t.msgBox(r.time.toFixed(2),r.floor.toFixed(2));
+  else main=t.msgCar(r.value.toFixed(2));
+  if(r.pred){ const p=t.opt[r.pred], a=t.opt[r.actual];
+    main+=' '+(r.right?t.predRight:t.predWrong(p,a)); cls=r.right?'good':cls;
+    const because = r.reason? t.reason[r.reason] : ''; const own=r.own?(' "'+r.own+'"'):'';
+    talk=t.youSaid+p+(because||own?' — '+because+own:'')+'. '+t.talk; }
+  return {main,cls,talk};
+}
+function renderMsg(){ const m=msgText(), el=$('msg'); el.className='msg '+(m.cls||'');
+  $('msgText').innerHTML=''; $('msgText').append(m.main); if(m.talk){ const s=document.createElement('span'); s.className='talk'; s.textContent=m.talk; $('msgText').append(s); } }
+function renderTable(){
+  const t=tr(), w=$('tableWrap'), list=runs[obj];
+  if(!list.length){ w.innerHTML=`<p class="empty">${t.empty}</p>`; return; }
+  const col2= obj==='box'?`<th>${t.colTime}</th><th>${t.colFloor}</th>`:`<th>${t.colBrake}</th>`;
+  let h=`<table><thead><tr><th>#</th><th>${t.colSurface}</th>${col2}<th>${t.colPred}</th></tr></thead><tbody>`;
+  list.forEach(r=>{
+    const pr=r.pred?(t.opt[r.pred]+' '+(r.right?'✓':'✗')):'–';
+    const vals= obj==='box' ? `<td>${r.time===Infinity?t.didNotMove:r.time.toFixed(2)}</td><td>${r.floor.toFixed(2)}</td>` : `<td>${r.value.toFixed(2)}</td>`;
+    h+=`<tr><td><span class="dot" style="background:${r.color}"></span>${r.n}</td><td>${surfLabel(r)}</td>${vals}<td>${pr}</td></tr>`; });
+  w.innerHTML=h+'</tbody></table>';
+}
+function drawBars(){
+  const c=bctx, W=bars._w, H=bars._h; if(!W) return; c.clearRect(0,0,W,H);
+  const list=runs[obj], t=tr(), pl=40, pr=10, pt=18, pb=40;
+  const vals=list.map(r=>r.value), finite=vals.filter(v=>isFinite(v));
+  let vmax=Math.max(1,...finite)*1.15; vmax=Math.ceil(vmax);
+  const Y=v=>H-pb-(v/vmax)*(H-pt-pb);
+  c.strokeStyle=cssv('--line'); c.fillStyle=cssv('--muted'); c.font='12px "Baloo 2",sans-serif'; c.textAlign='right'; c.lineWidth=1;
+  const stepV=vmax>10?Math.ceil(vmax/5):1;
+  for(let v=0;v<=vmax;v+=stepV){ c.beginPath(); c.moveTo(pl,Y(v)); c.lineTo(W-pr,Y(v)); c.stroke(); c.fillText(v,pl-6,Y(v)+4); }
+  c.textAlign='center'; c.fillText(obj==='box'?t.barsBox:t.barsCar,(pl+W-pr)/2,H-4);
+  if(!list.length) return;
+  const slot=(W-pl-pr)/Math.max(list.length,4), bw=Math.min(46,slot*0.65);
+  list.forEach((r,i)=>{ const x=pl+slot*i+(slot-bw)/2; const inf=!isFinite(r.value);
+    const top=inf?pt:Y(r.value); c.fillStyle=r.color; c.globalAlpha=inf?0.3:1; c.fillRect(x,top,bw,H-pb-top); c.globalAlpha=1;
+    c.fillStyle=cssv('--ink'); c.font='700 12px "Baloo 2",sans-serif';
+    c.fillText(inf?'—':r.value.toFixed(1),x+bw/2,top-4);
+    const m=MATS.find(q=>q.id===r.matId), k=CONDS.find(q=>q.id===r.condId);
+    c.font='13px sans-serif'; c.fillText(r.custom?'#'+r.n:(m.em+k.em),x+bw/2,H-pb+16); });
+}
+function drawGraph(){
+  const c=gctx, W=graph._w, H=graph._h; if(!W) return; c.clearRect(0,0,W,H);
+  const pl=42,pr=10,pt=10,pb=34, t=tr(), list=runs[obj];
+  const all=list.map(r=>r.trace); if(sim.running) all.push(sim.trace);
+  let tMax=3,vMax=2; all.forEach(a=>a.forEach(p=>{ if(p.t>tMax)tMax=p.t; if(p.v>vMax)vMax=p.v; }));
+  tMax=Math.ceil(tMax); vMax=Math.ceil(vMax*1.1);
+  const X=v=>pl+(v/tMax)*(W-pl-pr), Y=v=>H-pb-(v/vMax)*(H-pt-pb);
+  c.strokeStyle=cssv('--line'); c.lineWidth=1; c.fillStyle=cssv('--muted'); c.font='12px "Baloo 2",sans-serif';
+  const ts=tMax>12?4:tMax>6?2:1; c.textAlign='center';
+  for(let i=0;i<=tMax;i+=ts){ c.beginPath(); c.moveTo(X(i),pt); c.lineTo(X(i),H-pb); c.stroke(); c.fillText(i,X(i),H-pb+14); }
+  c.textAlign='right'; for(let v=0;v<=vMax;v++){ c.beginPath(); c.moveTo(pl,Y(v)); c.lineTo(W-pr,Y(v)); c.stroke(); c.fillText(v,pl-6,Y(v)+4); }
+  c.textAlign='center'; c.fillText(t.timeAxis,(pl+W-pr)/2,H-4);
+  c.save(); c.translate(12,(pt+H-pb)/2); c.rotate(-Math.PI/2); c.fillText(t.speedAxis,0,0); c.restore();
+  const line=(a,col,w,al)=>{ if(a.length<2)return; c.strokeStyle=col; c.lineWidth=w; c.globalAlpha=al; c.beginPath(); a.forEach((p,i)=>i?c.lineTo(X(p.t),Y(p.v)):c.moveTo(X(p.t),Y(p.v))); c.stroke(); c.globalAlpha=1; };
+  list.forEach((r,i)=>line(r.trace,r.color,i===list.length-1&&!sim.running?3:2,i===list.length-1&&!sim.running?1:.55));
+  if(sim.running) line(sim.trace,RUNCOLORS[list.length%RUNCOLORS.length],3,1);
+}
+function readouts(){
+  const t=tr(); let v='–', u='';
+  if(obj==='box'){ $('kPrimary').textContent=t.rTime; u='s';
+    if(sim.stuck) { v=t.didNotMove; u=''; } else if(sim.rampTime!==null) v=sim.rampTime.toFixed(2); else if(sim.running) v=sim.t.toFixed(2); }
+  else { $('kPrimary').textContent=t.rBrake; u='m'; if(sim.brakeS!==null) v=(sim.s-sim.brakeS).toFixed(2); }
+  $('vPrimary').textContent=v; $('uPrimary').textContent=u;
+  $('vSpeed').textContent=sim.v.toFixed(2);
+  $('vTop').textContent=(sim.running||sim.done)?sim.maxV.toFixed(2):'–';
+  $('roDist').style.display= obj==='box'?'':'none';
+  $('vDist').textContent=(sim.running||sim.done)?Math.max(0,sim.s-L).toFixed(2):'–';
+  const f=Math.min(1,sim.heat/energyTotal()); $('vHeat').textContent=Math.round(f*100)+'%'; $('heatFill').style.width=(f*100)+'%';
+}
+function renderWords(){
+  const g=$('wordGrid'); g.innerHTML='';
+  WORDS.forEach(w=>{ const b=document.createElement('button'); b.className='word';
+    b.innerHTML=`<b>${w[0]}</b><span class="dv">${w[1]}</span><span>${w[2]}</span>`;
+    b.onclick=()=>{ speak(w[0],'en'); speak(w[2],'hi',true); }; g.appendChild(b); });
+}
+function speak(text,lg,queue){
+  try{ const ss=window.speechSynthesis; if(!ss) return; if(!queue) ss.cancel();
+    const u=new SpeechSynthesisUtterance(text); u.lang= lg==='hi'?'hi-IN':'en-IN'; u.rate=0.9;
+    const v=ss.getVoices().find(x=>x.lang&&x.lang.toLowerCase().startsWith(lg)); if(v) u.voice=v; ss.speak(u); }catch(e){}
+}
+function applyText(){
+  document.documentElement.lang= lang==='hi'?'hi':'en';
+  document.querySelectorAll('[data-t]').forEach(el=>{ const v=T[lang][el.dataset.t]; if(typeof v==='string') el.textContent=v; });
+  $('lang-en').setAttribute('aria-pressed',String(lang==='en')); $('lang-hi').setAttribute('aria-pressed',String(lang==='hi'));
+  $('guide-en').style.display= lang==='en'?'':'none'; $('guide-hi').style.display= lang==='hi'?'':'none';
+}
+function renderAll(){ applyText(); renderChoose(); renderPred(); renderTable(); renderMsg(); drawBars(); drawGraph(); }
+function setMode(m){ mode=m; document.body.classList.toggle('explore',m==='explore');
+  $('mode-simple').setAttribute('aria-pressed',String(m==='simple')); $('mode-explore').setAttribute('aria-pressed',String(m==='explore'));
+  if(m==='simple'&&custom){ custom=false; applySurface(); }
+  requestAnimationFrame(resize); }
+
+/* ---------- events ---------- */
+$('lang-en').onclick=()=>{lang='en';renderAll();};
+$('lang-hi').onclick=()=>{lang='hi';renderAll();};
+$('mode-simple').onclick=()=>setMode('simple');
+$('mode-explore').onclick=()=>setMode('explore');
+$('tab-lab').onclick=()=>{ $('lab').style.display=''; $('teacher').style.display='none'; $('tab-lab').setAttribute('aria-pressed','true'); $('tab-teacher').setAttribute('aria-pressed','false'); requestAnimationFrame(resize); };
+$('tab-teacher').onclick=()=>{ $('lab').style.display='none'; $('teacher').style.display='block'; $('tab-lab').setAttribute('aria-pressed','false'); $('tab-teacher').setAttribute('aria-pressed','true'); };
+$('muSlider').oninput=e=>setMu(parseFloat(e.target.value));
+$('muUp').onclick=()=>setMu(mu+0.05); $('muDown').onclick=()=>setMu(mu-0.05);
+$('angSlider').oninput=e=>{ angle=parseInt(e.target.value,10); document.querySelectorAll('.angNow').forEach(s=>s.textContent=angle); if(sim.done) resetSim(); };
+$('goBtn').onclick=()=>{ if(sim.done) resetSim(); start(); };
+$('resetBtn').onclick=()=>resetSim();
+$('slowmo').onchange=e=>slowmo=e.target.checked;
+$('showForces').onchange=e=>showForces=e.target.checked;
+$('wobble').onchange=e=>wobble=e.target.checked;
+$('ownWords').oninput=()=>$('needReason').style.display='none';
+$('clearBtn').onclick=()=>{ runs[obj]=[]; pred=null; reason=null; resetSim(); renderAll(); };
+$('msgSpeak').onclick=()=>{ const m=msgText(); speak(m.main+(m.talk?' '+m.talk:''),lang); };
+$('qSpeak').onclick=()=>speak($('qText').textContent,lang);
+window.addEventListener('resize',resize);
+try{ window.speechSynthesis && window.speechSynthesis.getVoices(); }catch(e){}
+
+let last=performance.now(), gT=0;
+function frame(now){
+  const real=Math.min(0.05,(now-last)/1000); last=now;
+  const dt= slowmo?real*0.3:real;
+  if(sim.running){ const n=Math.max(1,Math.ceil(dt/0.002)); for(let i=0;i<n&&sim.running;i++) step(dt/n); }
+  spawnHeat(dt); updateParticles(real);
+  if(GEO.W) drawScene(real);
+  readouts();
+  if(sim.running){ gT+=real; if(gT>0.08){ gT=0; drawGraph(); } }
+  requestAnimationFrame(frame);
+}
+buildDecor(); renderWords(); renderAll(); resize(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
